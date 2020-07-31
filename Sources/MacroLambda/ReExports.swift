@@ -11,3 +11,6 @@
 
 import enum MacroLambdaCore.lambda
 public typealias lambda = MacroLambdaCore.lambda
+
+import enum AWSLambdaRuntime.Lambda
+public typealias Lambda = AWSLambdaRuntime.Lambda
