@@ -3,7 +3,7 @@
        align="right" width="100" height="100" />
 </h2>
 
-AWS Lambda API Gateway](https://aws.amazon.com/api-gateway/)
+AWS Lambda [API Gateway](https://aws.amazon.com/api-gateway/)
 Support for Macro and MacroExpress
 (and all things built on-top).
 
