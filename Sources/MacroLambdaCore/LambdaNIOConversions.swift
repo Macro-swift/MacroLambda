@@ -95,9 +95,15 @@ internal extension NIOHTTP1.HTTPHeaders {
       else {
         if let other = single.removeValue(forKey: name) {
           assert(multi[name] == nil)
-          multi[name, default:[]].append(other)
+          multi[name] = [ other, value ]
         }
-        multi[name, default:[]].append(value)
+        else if var values = multi.removeValue(forKey: name) {
+          values.append(value)
+          multi[name] = values
+        }
+        else {
+          single[name] = value
+        }
       }
     }
 
