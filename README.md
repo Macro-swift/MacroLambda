@@ -51,6 +51,7 @@ Lambda.run(app)
 
 ### Links
 
+- WWDC 2020: [Use Swift on AWS Lambda with Xcode](https://developer.apple.com/videos/play/wwdc2020/10644/)
 - Tutorial: [Create your first HTTP endpoint with Swift on AWS Lambda](https://fabianfett.de/swift-on-aws-lambda-creating-your-first-http-endpoint)
 - [Swift AWS Lambda Runtime](https://github.com/swift-server/swift-aws-lambda-runtime)
 - Amazon Web Services [API Gateway](https://aws.amazon.com/api-gateway/)
