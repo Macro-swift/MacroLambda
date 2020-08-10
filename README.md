@@ -10,6 +10,8 @@ Support for Macro and MacroExpress
 It allows deployment of arbitrary Macro applications as AWS Lambda functions,
 including MacroApp endpoints.
 
+Blog article: [Deploying Swift on AWS Lambda](http://www.alwaysrightinstitute.com/macrolambda/).
+
 The module is split into the `MacroLambda` module, 
 which provides the Express runner (`Lambda.run(express-app)`)
 and `MacroLambdaCore` which only links against `http` and provides the 
@@ -41,6 +43,14 @@ app.get { req, res, next in
 Lambda.run(app)
 ```
 
+## Deployment
+
+Using `swift lambda` (`brew install SPMDestinations/tap/swift-lambda`):
+```
+$ swift lambda deploy -d 5.2
+```
+Tutorial available: [Deploying Swift on AWS Lambda](http://www.alwaysrightinstitute.com/macrolambda/).
+
 ## Environment Variables
 
 - `macro.core.numthreads`
@@ -51,6 +61,7 @@ Lambda.run(app)
 
 ### Links
 
+- [Deploying Swift on AWS Lambda](http://www.alwaysrightinstitute.com/macrolambda/)
 - WWDC 2020: [Use Swift on AWS Lambda with Xcode](https://developer.apple.com/videos/play/wwdc2020/10644/)
 - Tutorial: [Create your first HTTP endpoint with Swift on AWS Lambda](https://fabianfett.de/swift-on-aws-lambda-creating-your-first-http-endpoint)
 - [Swift AWS Lambda Runtime](https://github.com/swift-server/swift-aws-lambda-runtime)
