@@ -20,6 +20,7 @@ import class    http.ServerResponse
 import protocol AWSLambdaRuntime.EventLoopLambdaHandler
 import enum     AWSLambdaRuntime.Lambda
 import enum     AWSLambdaEvents.APIGateway
+import express
 
 extension lambda {
 
@@ -209,7 +210,7 @@ extension lambda {
       let req = IncomingMessage(lambdaRequest: request, log: context.logger)
       let res = ServerResponse(unsafeChannel: nil, log: context.logger)
       res.cork()
-      res.extra["macro.express.request"] = req // FIXME: expose in ME
+      res.request = req
             
       // The transaction ends when the response is done, not when the
       // request was read completely!
