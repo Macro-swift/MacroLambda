@@ -15,11 +15,11 @@ let package = Package(
   
   dependencies: [
     .package(url: "https://github.com/Macro-swift/Macro.git",
-             from: "0.5.7"),
+             from: "0.6.2"),
     .package(url: "https://github.com/Macro-swift/MacroExpress.git",
-             from: "0.5.7"),
+             from: "0.6.1"),
     .package(url: "https://github.com/swift-server/swift-aws-lambda-runtime.git",
-             .upToNextMajor(from:"0.2.0"))
+             .upToNextMajor(from:"0.3.0"))
   ],
   
   targets: [
@@ -27,7 +27,7 @@ let package = Package(
             dependencies: [ "MacroCore", "http",
                             "AWSLambdaRuntime", "AWSLambdaEvents" ]),
     .target(name: "MacroLambda",     
-            dependencies: [ "MacroLambdaCore", "AWSLambdaRuntime",
+            dependencies: [ "MacroLambdaCore",  "AWSLambdaRuntime",
                             "MacroExpress" ])
   ]
 )

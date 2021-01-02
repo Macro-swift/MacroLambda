@@ -8,11 +8,12 @@
 
 #if canImport(AWSLambdaEvents)
 
-import struct Logging.Logger
-import struct NIOHTTP1.HTTPRequestHead
-import enum   AWSLambdaEvents.APIGateway
-import struct MacroCore.Buffer
-import class  http.IncomingMessage
+import struct   Logging.Logger
+import struct   NIOHTTP1.HTTPRequestHead
+import enum     AWSLambdaEvents.APIGateway
+import struct   MacroCore.Buffer
+import protocol MacroCore.EnvironmentKey
+import class    http.IncomingMessage
 
 public extension IncomingMessage {
   
@@ -86,17 +87,17 @@ public extension IncomingMessage {
   }
 }
 
-fileprivate let lambdaRequestKey = "macro.lambda.request"
+
+enum LambdaRequestKey: EnvironmentKey {
+  static let defaultValue : APIGateway.V2.Request? = nil
+  static let loggingKey   = "lambda-request"
+}
 
 public extension IncomingMessage {
   
   var lambdaGatewayRequest: APIGateway.V2.Request? {
-    set { extra[lambdaRequestKey] = newValue }
-    get {
-      guard let req = extra[lambdaRequestKey] else { return nil }
-      assert(req is APIGateway.V2.Request)
-      return req as? APIGateway.V2.Request
-    }
+    set { environment[LambdaRequestKey.self] = newValue }
+    get { return environment[LambdaRequestKey.self]     }
   }
 }
 #endif // canImport(AWSLambdaEvents)
