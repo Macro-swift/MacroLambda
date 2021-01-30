@@ -75,7 +75,7 @@ public extension IncomingMessage {
     guard let body = lambdaRequest.body else { return }
     do {
       if lambdaRequest.isBase64Encoded {
-        push(try Buffer.from(body, encoding: "base64"))
+        push(try Buffer.from(body, "base64"))
       }
       else {
         push(try Buffer.from(body))
