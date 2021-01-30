@@ -15,9 +15,9 @@ let package = Package(
   
   dependencies: [
     .package(url: "https://github.com/Macro-swift/Macro.git",
-             from: "0.6.2"),
+             from: "0.8.7"),
     .package(url: "https://github.com/Macro-swift/MacroExpress.git",
-             from: "0.6.1"),
+             from: "0.8.4"),
     .package(url: "https://github.com/swift-server/swift-aws-lambda-runtime.git",
              .upToNextMajor(from:"0.3.0"))
   ],
