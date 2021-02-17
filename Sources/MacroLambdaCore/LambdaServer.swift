@@ -180,12 +180,23 @@ extension lambda {
       struct APIGatewayProxyLambda: EventLoopLambdaHandler {
         typealias In  = APIGateway.V2.Request
         typealias Out = APIGateway.V2.Response
+        typealias InV1  = APIGateway.Request
+        typealias OutV1 = APIGateway.Response
         
         let server : Server
 
         func handle(context: Lambda.Context, event: In) -> EventLoopFuture<Out>
         {
           let promise = context.eventLoop.makePromise(of: Out.self)
+          server.handle(context: context, request: event) { result in
+            promise.completeWith(result)
+          }
+          return promise.futureResult
+        }
+        
+        func handle(context: Lambda.Context, event: InV1) -> EventLoopFuture<OutV1>
+        {
+          let promise = context.eventLoop.makePromise(of: OutV1.self)
           server.handle(context: context, request: event) { result in
             promise.completeWith(result)
           }
@@ -224,6 +235,67 @@ extension lambda {
         didFinish = true
         
         callback(.success(res.asLambdaGatewayResponse))
+      }
+      
+      res.onError { error in
+        guard !didFinish else {
+          return context.logger.error("Follow up error: \(error)")
+        }
+        didFinish = true
+        callback(.failure(error))
+      }
+      
+      // TODO: Process Expect. It's not really "ahead of sending the body",
+      //       but we still need to validate the preconditions. http.Server
+      //       has code for this. Do the same.
+      
+      do { // onRequest
+        var listeners = self._requestListeners // Note: No `once` support!
+        guard !listeners.isEmpty else {
+          didFinish = true
+          return callback(.failure(ServerError.noRequestListeners))
+        }
+        
+        listeners.emit(( req, res ))
+      }
+      
+      // For a streaming push, we do the lambda-send here, after announcing the
+      // head.
+      if !res.writableEnded { // response is already closed
+        req.sendLambdaBody(request)
+      }
+      else {
+        assert(didFinish)
+      }
+    }
+    
+    private func handle(context  : Lambda.Context,
+                        request  : APIGateway.Request,
+                        callback : @escaping
+                          ( Result<APIGateway.Response, Error> ) -> Void)
+    {
+      guard !self._requestListeners.isEmpty else {
+        assertionFailure("no request listeners?!")
+        return callback(.failure(ServerError.noRequestListeners))
+      }
+
+      let req = IncomingMessage(lambdaRequest: request, log: context.logger)
+      let res = ServerResponse(unsafeChannel: nil, log: context.logger)
+      res.cork()
+      res.request = req
+            
+      // The transaction ends when the response is done, not when the
+      // request was read completely!
+      var didFinish = false
+      
+      res.onceFinish {
+        // convert res to gateway Response and call callback
+        guard !didFinish else {
+          return context.logger.error("TX already finished!")
+        }
+        didFinish = true
+        
+        callback(.success(res.asLambdaV1GatewayResponse))
       }
       
       res.onError { error in
