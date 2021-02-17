@@ -208,8 +208,10 @@ extension lambda {
           return promise.futureResult
         }
       }
-        
-      let proxy = APIGatewayV1ProxyLambda(server: self)
+      
+      // FIXME: This proxy is where the Lambda Request payload type is determined for Codable decoding.
+      //        Need to figure out how to select or determine type.
+      let proxy = APIGatewayProxyLambda(server: self)
       Lambda.run(proxy)
       Foundation.exit(0) // Because `run` is not marked as Never (Issue #151)
     }
