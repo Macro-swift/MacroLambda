@@ -180,8 +180,6 @@ extension lambda {
       struct APIGatewayProxyLambda: EventLoopLambdaHandler {
         typealias In  = APIGateway.V2.Request
         typealias Out = APIGateway.V2.Response
-        typealias InV1  = APIGateway.Request
-        typealias OutV1 = APIGateway.Response
         
         let server : Server
 
@@ -193,17 +191,25 @@ extension lambda {
           }
           return promise.futureResult
         }
+      }
+      
+      struct APIGatewayV1ProxyLambda: EventLoopLambdaHandler {
+        typealias In  = APIGateway.Request
+        typealias Out = APIGateway.Response
         
-        func handle(context: Lambda.Context, event: InV1) -> EventLoopFuture<OutV1>
+        let server : Server
+
+        func handle(context: Lambda.Context, event: In) -> EventLoopFuture<Out>
         {
-          let promise = context.eventLoop.makePromise(of: OutV1.self)
+          let promise = context.eventLoop.makePromise(of: Out.self)
           server.handle(context: context, request: event) { result in
             promise.completeWith(result)
           }
           return promise.futureResult
         }
       }
-      let proxy = APIGatewayProxyLambda(server: self)
+        
+      let proxy = APIGatewayV1ProxyLambda(server: self)
       Lambda.run(proxy)
       Foundation.exit(0) // Because `run` is not marked as Never (Issue #151)
     }
