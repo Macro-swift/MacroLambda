@@ -6,8 +6,6 @@ let package = Package(
   
   name: "MacroLambda",
   
-  platforms : [ .macOS(.v10_13) ], // drop once #152 is fixed in the runtime
-  
   products: [
     .library(name: "MacroLambdaCore", targets: [ "MacroLambdaCore" ]),
     .library(name: "MacroLambda",     targets: [ "MacroLambda"     ])
