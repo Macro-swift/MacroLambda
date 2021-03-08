@@ -6,8 +6,6 @@ let package = Package(
   
   name: "MacroLambda",
   
-  platforms : [ .macOS(.v10_13) ], // drop once #152 is fixed in the runtime
-  
   products: [
     .library(name: "MacroLambdaCore", targets: [ "MacroLambdaCore" ]),
     .library(name: "MacroLambda",     targets: [ "MacroLambda"     ])
@@ -19,7 +17,7 @@ let package = Package(
     .package(url: "https://github.com/Macro-swift/MacroExpress.git",
              from: "0.8.4"),
     .package(url: "https://github.com/swift-server/swift-aws-lambda-runtime.git",
-             .upToNextMajor(from:"0.3.0"))
+             .upToNextMajor(from:"0.4.0"))
   ],
   
   targets: [

@@ -3,20 +3,19 @@
 //  MacroLambda
 //
 //  Created by Helge Heß
-//  Copyright © 2020 ZeeZide GmbH. All rights reserved.
+//  Copyright © 2020-2021 ZeeZide GmbH. All rights reserved.
 //
 
 #if canImport(AWSLambdaEvents)
-
-import class http.ServerResponse
 import enum  AWSLambdaEvents.APIGateway
+import class http.ServerResponse
 
 extension ServerResponse {
   
   var asLambdaGatewayResponse: APIGateway.V2.Response {
     assert(writableEnded, "sending ServerResponse which didn't end?!")
     
-    let ( singleHeaders, multiHeaders, cookies ) = headers.asLambda()
+    let ( headers, cookies ) = self.headers.asLambda()
     
     let body : String? = {
       guard let writtenContent = writableBuffer, !writtenContent.isEmpty else {
@@ -35,12 +34,11 @@ extension ServerResponse {
       }
     }()
     
-    return .init(statusCode        : status.asLambda,
-                 headers           : singleHeaders,
-                 multiValueHeaders : multiHeaders,
-                 body              : body,
-                 isBase64Encoded   : body != nil ? true : false,
-                 cookies           : cookies)
+    return .init(statusCode      : status.asLambda,
+                 headers         : headers,
+                 body            : body,
+                 isBase64Encoded : body != nil ? true : false,
+                 cookies         : cookies)
   }
 }
 
