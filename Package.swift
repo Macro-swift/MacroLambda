@@ -17,7 +17,7 @@ let package = Package(
     .package(url: "https://github.com/Macro-swift/MacroExpress.git",
              from: "0.8.4"),
     .package(url: "https://github.com/swift-server/swift-aws-lambda-runtime.git",
-             .upToNextMajor(from:"0.3.0"))
+             .upToNextMajor(from:"0.4.0"))
   ],
   
   targets: [

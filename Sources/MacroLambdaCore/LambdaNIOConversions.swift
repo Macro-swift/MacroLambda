@@ -3,7 +3,7 @@
 //  MacroLambda
 //
 //  Created by Helge Heß
-//  Copyright © 2020 ZeeZide GmbH. All rights reserved.
+//  Copyright © 2020-2021 ZeeZide GmbH. All rights reserved.
 //
 
 #if canImport(AWSLambdaEvents)
@@ -73,16 +73,15 @@ internal extension AWSLambdaEvents.HTTPMultiValueHeaders {
 internal extension NIOHTTP1.HTTPHeaders {
   
   @inlinable
-  func asLambda() -> ( single  : AWSLambdaEvents.HTTPHeaders?,
-                       multi   : AWSLambdaEvents.HTTPMultiValueHeaders?,
+  func asLambda() -> ( headers : AWSLambdaEvents.HTTPHeaders?,
                        cookies : [ String ]? )
   {
-    guard !isEmpty else { return ( nil, nil, nil ) }
+    guard !isEmpty else { return ( nil, nil ) }
     
     // Those do no proper CI, lets hope they are consistent
-    var single  = AWSLambdaEvents.HTTPHeaders()
-    var multi   = AWSLambdaEvents.HTTPMultiValueHeaders()
+    var headers = AWSLambdaEvents.HTTPHeaders()
     var cookies = [ String ]()
+    headers.reserveCapacity(headers.count)
     
     // Schnüff, we don't get NIO's `compareCaseInsensitiveASCIIBytes`
     for ( name, value ) in self {
@@ -93,22 +92,20 @@ internal extension NIOHTTP1.HTTPHeaders {
         cookies.append(value)
       }
       else {
-        if let other = single.removeValue(forKey: name) {
-          assert(multi[name] == nil)
-          multi[name] = [ other, value ]
-        }
-        else if var values = multi.removeValue(forKey: name) {
-          values.append(value)
-          multi[name] = values
+        if let existing = headers.removeValue(forKey: name) {
+          // Don't know, SwiftLambda 0.4 dropped the multiheaders? What should
+          // we do for dupes?
+          if      value   .isEmpty {}
+          else if existing.isEmpty { headers[name] = value }
+          else                     { headers[name] = existing + ", " + value }
         }
         else {
-          single[name] = value
+          headers[name] = value
         }
       }
     }
 
-    return ( single  : single .isEmpty ? nil : single,
-             multi   : multi  .isEmpty ? nil : multi,
+    return ( headers : headers.isEmpty ? nil : headers,
              cookies : cookies.isEmpty ? nil : cookies )
   }
 }
