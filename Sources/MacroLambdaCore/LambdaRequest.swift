@@ -69,7 +69,79 @@ public extension IncomingMessage {
     lambdaGatewayRequest = lambdaRequest
   }
   
+  convenience init(lambdaRequest : APIGateway.Request,
+                   log           : Logger = .init(label: "μ.http"))
+  {
+    // version doesn't matter, we don't really do HTTP
+    var head = HTTPRequestHead(
+      version : .init(major: 1, minor: 1),
+      method  : lambdaRequest.httpMethod.asNIO,
+      uri     : lambdaRequest.path
+    )
+    head.headers = lambdaRequest.headers.asNIO
+
+/* APIGateway.Request V1 (REST) do not support cookies.
+     
+    if let cookies = lambdaRequest.cookies, !cookies.isEmpty {
+      // So our "connect" module expects them in the headers, so we'd need
+      // to serialize them again ...
+      // The `IncomingMessage` also has a `cookies` getter, but I think that
+      // isn't cached.
+      for cookie in cookies { // that is weird too, is it right?
+        head.headers.add(name: "Cookie", value: cookie)
+      }
+    }
+*/
+    
+    // TBD: there is also "pathParameters", what is that, URL fragments (#)?
+    if let pathParams = lambdaRequest.pathParameters, !pathParams.isEmpty {
+      log.warning("ignoring lambda path parameters: \(pathParams)")
+    }
+    
+    if let qsParameters = lambdaRequest.queryStringParameters,
+       !qsParameters.isEmpty
+    {
+      // TBD: is that included in the path?
+      var isFirst = false
+      if !head.uri.contains("?") { head.uri.append("?"); isFirst = true }
+      for ( key, value ) in qsParameters {
+        if isFirst { isFirst = false }
+        else { head.uri += "&" }
+        
+        head.uri +=
+          key.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed)
+          ?? key
+        head.uri += "="
+        head.uri +=
+          value.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed)
+          ?? value
+      }
+    }
+
+    self.init(head, socket: nil, log: log)
+    
+    // and keep the whole thing
+    lambdaV1GatewayRequest = lambdaRequest
+  }
+  
   internal func sendLambdaBody(_ lambdaRequest: APIGateway.V2.Request) {
+    defer { push(nil) }
+    
+    guard let body = lambdaRequest.body else { return }
+    do {
+      if lambdaRequest.isBase64Encoded {
+        push(try Buffer.from(body, "base64"))
+      }
+      else {
+        push(try Buffer.from(body))
+      }
+    }
+    catch {
+      emit(error: error)
+    }
+  }
+  
+  internal func sendLambdaBody(_ lambdaRequest: APIGateway.Request) {
     defer { push(nil) }
     
     guard let body = lambdaRequest.body else { return }
@@ -93,11 +165,21 @@ enum LambdaRequestKey: EnvironmentKey {
   static let loggingKey   = "lambda-request"
 }
 
+enum LambdaV1RequestKey: EnvironmentKey {
+  static let defaultValue : APIGateway.Request? = nil
+  static let loggingKey   = "lambda-request"
+}
+
 public extension IncomingMessage {
   
   var lambdaGatewayRequest: APIGateway.V2.Request? {
     set { environment[LambdaRequestKey.self] = newValue }
     get { return environment[LambdaRequestKey.self]     }
+  }
+  
+  var lambdaV1GatewayRequest: APIGateway.Request? {
+    set { environment[LambdaV1RequestKey.self] = newValue }
+    get { return environment[LambdaV1RequestKey.self]     }
   }
 }
 #endif // canImport(AWSLambdaEvents)
