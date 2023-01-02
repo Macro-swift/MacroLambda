@@ -1,4 +1,4 @@
-// swift-tools-version:5.2
+// swift-tools-version:5.5
 
 import PackageDescription
 
@@ -13,12 +13,11 @@ let package = Package(
   
   dependencies: [
     .package(url: "https://github.com/Macro-swift/Macro.git",
-             from: "0.8.11"),
+             from: "1.0.0"),
     .package(url: "https://github.com/Macro-swift/MacroExpress.git",
-             from: "0.8.8"),
+             from: "1.0.0"),
     .package(url: "https://github.com/swift-server/swift-aws-lambda-runtime.git",
-             // b0rked release:.upToNextMajor(from:"0.5.1"))
-             .exact("0.4.0"))
+             from: "0.5.2")
   ],
   
   targets: [
@@ -28,6 +27,9 @@ let package = Package(
       .product(name: "express"          , package: "MacroExpress"),
       .product(name: "AWSLambdaRuntime" , package: "swift-aws-lambda-runtime"),
       .product(name: "AWSLambdaEvents"  , package: "swift-aws-lambda-runtime")
+    ],
+    exclude: [
+      "README.md"
     ]),
     .target(name: "MacroLambda", dependencies: [
       "MacroLambdaCore",
