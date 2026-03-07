@@ -7,6 +7,10 @@
 //
 
 #if canImport(AWSLambdaEvents)
+#if canImport(Foundation)
+import Foundation // orderedSame (FIXME)
+#endif
+
 import struct NIOHTTP1.HTTPRequestHead
 import struct NIOHTTP1.HTTPVersion
 import enum   NIOHTTP1.HTTPMethod
