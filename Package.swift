@@ -5,6 +5,8 @@ import PackageDescription
 let package = Package(
   
   name: "MacroLambda",
+
+  platforms: [ .macOS(.v12), .iOS(.v15) ],
   
   products: [
     .library(name: "MacroLambdaCore", targets: [ "MacroLambdaCore" ]),
@@ -13,9 +15,9 @@ let package = Package(
   
   dependencies: [
     .package(url: "https://github.com/Macro-swift/Macro.git",
-             from: "1.0.0"),
+             from: "1.0.22"),
     .package(url: "https://github.com/Macro-swift/MacroExpress.git",
-             from: "1.0.0"),
+             from: "1.0.26"),
     .package(url: "https://github.com/swift-server/swift-aws-lambda-runtime.git",
              from: "0.5.2")
   ],
