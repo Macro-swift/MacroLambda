@@ -3,21 +3,21 @@
 //  MacroLambda
 //
 //  Created by Helge Heß
-//  Copyright © 2020 ZeeZide GmbH. All rights reserved.
+//  Copyright © 2020-2026 ZeeZide GmbH. All rights reserved.
 //
 
 #if canImport(AWSLambdaEvents)
 
 import struct   Logging.Logger
 import struct   NIOHTTP1.HTTPRequestHead
-import enum     AWSLambdaEvents.APIGateway
+import struct   AWSLambdaEvents.APIGatewayV2Request
 import struct   MacroCore.Buffer
 import protocol MacroCore.EnvironmentKey
 import class    http.IncomingMessage
 
 public extension IncomingMessage {
-  
-  convenience init(lambdaRequest : APIGateway.V2.Request,
+
+  convenience init(lambdaRequest : APIGatewayV2Request,
                    log           : Logger = .init(label: "μ.http"))
   {
     // version doesn't matter, we don't really do HTTP
@@ -27,39 +27,37 @@ public extension IncomingMessage {
       uri     : lambdaRequest.context.http.path
     )
     head.headers = lambdaRequest.headers.asNIO
-    
-    if let cookies = lambdaRequest.cookies, !cookies.isEmpty {
+
+    if !lambdaRequest.cookies.isEmpty {
       // So our "connect" module expects them in the headers, so we'd need
       // to serialize them again ...
       // The `IncomingMessage` also has a `cookies` getter, but I think that
       // isn't cached.
-      for cookie in cookies { // that is weird too, is it right?
+      for cookie in lambdaRequest.cookies { // that is weird too, is it right?
         head.headers.add(name: "Cookie", value: cookie)
       }
     }
-    
+
     // TBD: there is also "pathParameters", what is that, URL fragments (#)?
-    if let pathParams = lambdaRequest.pathParameters, !pathParams.isEmpty {
-      log.warning("ignoring lambda path parameters: \(pathParams)")
+    if !lambdaRequest.pathParameters.isEmpty {
+      log.warning("ignoring lambda path parameters: \(lambdaRequest.pathParameters)")
     }
-    
-    if let qsParameters = lambdaRequest.queryStringParameters,
-       !qsParameters.isEmpty
-    {
+
+    if !lambdaRequest.queryStringParameters.isEmpty {
       // TBD: is that included in the path?
       var isFirst = false
       if !head.uri.contains("?") { head.uri.append("?"); isFirst = true }
-      for ( key, value ) in qsParameters {
+      for ( key, value ) in lambdaRequest.queryStringParameters {
         if isFirst { isFirst = false }
         else { head.uri += "&" }
-        
+
         head.uri +=
-          key.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed)
-          ?? key
+          key.addingPercentEncoding(
+            withAllowedCharacters: .urlQueryAllowed) ?? key
         head.uri += "="
         head.uri +=
-          value.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed)
-          ?? value
+          value.addingPercentEncoding(
+            withAllowedCharacters: .urlQueryAllowed) ?? value
       }
     }
 
@@ -68,8 +66,8 @@ public extension IncomingMessage {
     // and keep the whole thing
     lambdaGatewayRequest = lambdaRequest
   }
-  
-  internal func sendLambdaBody(_ lambdaRequest: APIGateway.V2.Request) {
+
+  internal func sendLambdaBody(_ lambdaRequest: APIGatewayV2Request) {
     defer { push(nil) }
     
     guard let body = lambdaRequest.body else { return }
@@ -89,15 +87,16 @@ public extension IncomingMessage {
 
 
 enum LambdaRequestKey: EnvironmentKey {
-  static let defaultValue : APIGateway.V2.Request? = nil
+
+  static let defaultValue : APIGatewayV2Request? = nil
   static let loggingKey   = "lambda-request"
 }
 
 public extension IncomingMessage {
-  
-  var lambdaGatewayRequest: APIGateway.V2.Request? {
+
+  var lambdaGatewayRequest: APIGatewayV2Request? {
     set { environment[LambdaRequestKey.self] = newValue }
-    get { return environment[LambdaRequestKey.self]     }
+    get { return environment[LambdaRequestKey.self] }
   }
 }
 #endif // canImport(AWSLambdaEvents)

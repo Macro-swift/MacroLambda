@@ -3,30 +3,32 @@
 //  MacroLambda
 //
 //  Created by Helge Heß
-//  Copyright © 2020 ZeeZide GmbH. All rights reserved.
+//  Copyright © 2020-2026 ZeeZide GmbH. All rights reserved.
 //
 
 #if canImport(AWSLambdaEvents) && canImport(AWSLambdaRuntime)
 
 import func     Foundation.setenv
 import func     Foundation.exit
+import func     Dispatch.dispatchMain
 import struct   Logging.Logger
-import class    NIO.EventLoopFuture
 import class    MacroCore.ErrorEmitter
 import enum     MacroCore.EventListenerSet
 import struct   MacroCore.Buffer
 import class    http.IncomingMessage
 import class    http.ServerResponse
-import protocol AWSLambdaRuntime.EventLoopLambdaHandler
 import enum     AWSLambdaRuntime.Lambda
-import enum     AWSLambdaEvents.APIGateway
+import class    AWSLambdaRuntime.LambdaRuntime
+import struct   AWSLambdaRuntime.LambdaContext
+import struct   AWSLambdaEvents.APIGatewayV2Request
+import struct   AWSLambdaEvents.APIGatewayV2Response
 import express
 
 extension lambda {
 
   /**
-   * An `http.Server` lookalike, but for AWS Lambda functions addressed using
-   * the AWS API Gateway V2.
+   * An `http.Server` lookalike, but for AWS Lambda functions
+   * addressed using the AWS API Gateway V2.
    *
    * Create those server objects using `lambda.createServer`, example:
    *
@@ -35,9 +37,7 @@ extension lambda {
    *       res.writeHead(200, [ "Content-Type": "text/html" ])
    *       res.end("<h1>Hello World</h1>")
    *     }
-   *     server.run()
-   *
-   * Note that the `run` function never returns.
+   *     try await server.run()
    */
   open class Server: ErrorEmitter {
     
@@ -172,35 +172,46 @@ extension lambda {
       var listeners = _listeningListeners
       _listeningListeners.removeAll()
       listeners.emit(self)
-      
-      // Note: I think we can't set the core.eventLoopGroup here, because the
-      //       eventLoop is only available in the Lambda context? Not sure who
-      //       would even touch the MacroCore loop (vs using current).
-      
-      struct APIGatewayProxyLambda: EventLoopLambdaHandler {
-        typealias In  = APIGateway.V2.Request
-        typealias Out = APIGateway.V2.Response
-        
-        let server : Server
 
-        func handle(context: Lambda.Context, event: In) -> EventLoopFuture<Out>
-        {
-          let promise = context.eventLoop.makePromise(of: Out.self)
-          server.handle(context: context, request: event) { result in
-            promise.completeWith(result)
+      // Note: I think we can't set the core.eventLoopGroup here, because
+      //       the eventLoop is only available in the Lambda context? Not
+      //       sure who would even touch the MacroCore loop (vs using
+      //       current).
+
+      struct APIGatewayProxyLambda: @unchecked Sendable {
+        let server : Server
+      }
+
+      let proxy = APIGatewayProxyLambda(server: self)
+      let runtime = LambdaRuntime {
+        (event: APIGatewayV2Request,
+         context: LambdaContext) async throws
+          -> APIGatewayV2Response in
+        try await withCheckedThrowingContinuation {
+          continuation in
+          proxy.server.handle(
+            context: context, request: event)
+          { result in
+            continuation.resume(with: result)
           }
-          return promise.futureResult
         }
       }
-      let proxy = APIGatewayProxyLambda(server: self)
-      Lambda.run(proxy)
-      Foundation.exit(0) // Because `run` is not marked as Never (Issue #151)
+      Task {
+        do {
+          try await runtime.run()
+        }
+        catch {
+          proxy.server.log.error("Lambda runtime error: \(error)")
+        }
+        Foundation.exit(0)
+      }
+      dispatchMain()
     }
-    
-    private func handle(context  : Lambda.Context,
-                        request  : APIGateway.V2.Request,
+
+    private func handle(context  : LambdaContext,
+                        request  : APIGatewayV2Request,
                         callback : @escaping
-                          ( Result<APIGateway.V2.Response, Error> ) -> Void)
+                          ( Result<APIGatewayV2Response, Error> ) -> Void)
     {
       guard !self._requestListeners.isEmpty else {
         assertionFailure("no request listeners?!")
