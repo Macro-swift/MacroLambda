@@ -3,16 +3,16 @@
 //  MacroLambda
 //
 //  Created by Helge Heß
-//  Copyright © 2020-2021 ZeeZide GmbH. All rights reserved.
+//  Copyright © 2020-2026 ZeeZide GmbH. All rights reserved.
 //
 
 #if canImport(AWSLambdaEvents)
-import enum  AWSLambdaEvents.APIGateway
-import class http.ServerResponse
+import struct AWSLambdaEvents.APIGatewayV2Response
+import class  http.ServerResponse
 
 extension ServerResponse {
-  
-  var asLambdaGatewayResponse: APIGateway.V2.Response {
+
+  var asLambdaGatewayResponse: APIGatewayV2Response {
     assert(writableEnded, "sending ServerResponse which didn't end?!")
     
     let ( headers, cookies ) = self.headers.asLambda()
